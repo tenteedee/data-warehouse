@@ -1,22 +1,24 @@
-// src/context/PostContext.tsx
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import axios from '../utils/axios';
 
 interface Post {
-  id: number;
+  id: string;
   title: string;
   description: string;
-  tags: string[];
+  tags: { tag: string }[];
 }
 
 interface PostContextType {
   posts: Post[];
-  page: number;
+  tags: string[];
+  currentPage: number;
   totalPages: number;
+  pageSize: number;
+  totalItems: number;
   setPage: (page: number) => void;
   setTitle: (title: string) => void;
-  setTags: (tags: string) => void;
-  deletePost: (id: number) => void;
+  setTag: (tag: string) => void;
+  deletePost: (id: string) => void;
 }
 
 export const PostContext = createContext<PostContextType | undefined>(
@@ -29,26 +31,54 @@ interface PostProviderProps {
 
 export const PostProvider: React.FC<PostProviderProps> = ({ children }) => {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [page, setPage] = useState<number>(1);
+  const [tags, setTagsList] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [title, setTitle] = useState<string>('');
-  const [tags, setTags] = useState<string>('');
+  const [tag, setTag] = useState<string>('');
 
   const fetchPosts = async () => {
     try {
-      const response = await axios.get(`/posts?title=${title}&page=${page}`);
-      setPosts(response.data.posts);
-      setTotalPages(response.data.totalPages);
+      setPosts([]);
+
+      const response = await axios.get('/posts', {
+        params: {
+          page: currentPage,
+          title: title || undefined,
+          tags: tag || undefined,
+        },
+      });
+
+      setPosts(response.data.posts || []);
+      setCurrentPage(response.data.current_page || 1);
+      setTotalPages(response.data.total_page || 1);
+      setPageSize(response.data.page_size || 10);
+      setTotalItems(response.data.total || 0);
     } catch (error) {
       console.error('Error fetching posts:', error);
     }
   };
 
+  const fetchTags = async () => {
+    try {
+      const response = await axios.get('/posts/tags');
+      setTagsList(response.data || []);
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    }
+  };
+
   useEffect(() => {
     fetchPosts();
-  }, [page, title, tags]);
+  }, [currentPage, title, tag]);
 
-  const deletePost = async (id: number) => {
+  useEffect(() => {
+    fetchTags();
+  }, []);
+
+  const deletePost = async (id: string) => {
     try {
       await axios.delete(`/posts/${id}`);
       fetchPosts();
@@ -61,11 +91,14 @@ export const PostProvider: React.FC<PostProviderProps> = ({ children }) => {
     <PostContext.Provider
       value={{
         posts,
-        page,
+        tags,
+        currentPage,
         totalPages,
-        setPage,
+        pageSize,
+        totalItems,
+        setPage: setCurrentPage,
         setTitle,
-        setTags,
+        setTag,
         deletePost,
       }}
     >

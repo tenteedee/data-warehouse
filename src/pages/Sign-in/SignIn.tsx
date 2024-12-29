@@ -1,11 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 
-const SignIn = () => {
-  const [username, setUsername] = useState('');
+const SignIn: React.FC = () => {
+  const [username, setUsername] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const authContext = useContext(AuthContext);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  if (!authContext) {
+    throw new Error('SignIn must be used within an AuthProvider');
+  }
+
+  const { login } = authContext;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Signing in with username:', username);
+    setLoading(true);
+    setError(null);
+
+    try {
+      await login(username);
+      window.location.href = '/';
+    } catch (err) {
+      setError('Failed to sign in. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -15,12 +35,9 @@ const SignIn = () => {
       </header>
 
       <div className="h-screen flex items-center justify-center">
-        <div className="w-full space-y-8 p-8 flex flex-col items-center justify-center ">
+        <div className="w-full max-w-sm space-y-8 p-8 flex flex-col items-center">
           <h1 className="text-center text-5xl">Sign In</h1>
-          <form
-            onSubmit={handleSubmit}
-            className="w-full max-w-sm space-y-4 pt-5"
-          >
+          <form onSubmit={handleSubmit} className="w-full space-y-4 pt-5">
             <div className="space-y-2">
               <label htmlFor="username" className="font-large">
                 Username
@@ -35,11 +52,14 @@ const SignIn = () => {
               />
             </div>
 
+            {error && <p className="text-red-500">{error}</p>}
+
             <button
               type="submit"
+              disabled={loading}
               className="w-[413px] h-[53px] bg-[#9C69E2] hover:bg-purple-600 text-white font-medium rounded-[53px]"
             >
-              Sign In
+              {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
         </div>
