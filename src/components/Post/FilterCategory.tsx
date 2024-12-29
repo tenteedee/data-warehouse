@@ -72,7 +72,6 @@ const Filter: React.FC = () => {
         </select>
       </div>
 
-      {/* Add Post Modal */}
       <AddPostModal
         isOpen={isAddModalOpen}
         onClose={closeAddModal}

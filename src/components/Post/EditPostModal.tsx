@@ -35,6 +35,7 @@ const EditPostModal: React.FC<EditPostModalProps> = ({
     if (post) {
       onSave(post.id, { title, description });
     }
+    window.location.reload();
   };
 
   if (!isOpen || !post) return null;
